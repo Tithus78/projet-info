@@ -31,13 +31,12 @@ void deplacerCurseur(int *x, int *y, char touche, int Hauteur, int Largeur) {
 
 // Gérer la sélection
 bool gererSelection(bool selectionActive, int *selX, int *selY, int x, int y) {
-    if (!selectionActive) {
-        *selX = x;
-        *selY = y;
-        return true;
-    } else {
+    if (selectionActive) 
         return false;
-    }
+    
+   *selX = x; 
+   *selY = y; // enregistrement des positions
+   return true;
 }
 
 // Permuter deux items
@@ -54,11 +53,12 @@ void permuterItems(int plateau[N][P], int x1, int y1, int x2, int y2) {
 
 // Affichage du plateau
 void afficherPlateau(int plateau[N][P], int cx, int cy) {
-    system("cls");
+    system("cls"); // effece l'écran
+    
     for (int y = 0; y < HAUTEUR; y++) {
-        for (int x = 0; x < LARGEUR; x++) {
+        for (int x = 0; x < LARGEUR; x++) { // parcourir le plateau
             if (x == cx && y == cy)
-                printf("[X] ");
+                printf("[X] ");  // curseur
             else
                 printf(" %d  ", plateau[y][x]);
         }
