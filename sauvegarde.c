@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-// STRUCTURE DES DONNEES (Déplacée du .h)
+// STRUCTURE DES DONNEES 
 typedef struct {
     char pseudo[50];        
     int niveau_atteint;     
@@ -10,7 +10,7 @@ typedef struct {
 } SauvegardePartie;
 
 
-// CONSTANTES (Déplacées du .c)
+// CONSTANTES 
 #define FILENAME "sauvegardes.txt"
 #define TEMP_FILENAME "temp.txt"
 
@@ -21,7 +21,7 @@ int charger_partie(const char* pseudo, int* niveau_ptr, int* vies_ptr);
 int sauvegarder_partie(const char* pseudo, int niveau, int vies);
 
 
-// 1. VERIFICATION DU PSEUDO (Implémentation)
+// 1. VERIFICATION DU PSEUDO 
 
 int verifier_pseudo(const char* pseudo) {
     FILE *fichier_sauvegarde = NULL;
@@ -46,7 +46,7 @@ int verifier_pseudo(const char* pseudo) {
     return 1;
 }
 
-// 2. CHARGEMENT DE PARTIE 
+// 2. CHARGEMENT D'UNE PARTIE 
 int charger_partie(const char* pseudo, int* niveau_ptr, int* vies_ptr) {
     FILE *fichier_sauvegarde = NULL;
     char pseudo_lu[50];
