@@ -1,11 +1,27 @@
 #include <stdio.h>
 #include <string.h>
-#include "sauvegarde.h" 
 
+
+// STRUCTURE DES DONNEES (Déplacée du .h)
+typedef struct {
+    char pseudo[50];        
+    int niveau_atteint;     
+    int vies_restantes;     
+} SauvegardePartie;
+
+
+// CONSTANTES (Déplacées du .c)
 #define FILENAME "sauvegardes.txt"
 #define TEMP_FILENAME "temp.txt"
 
-// 1. VERIFICATION DU PSEUDO
+// PROTOTYPES DES FONCTIONS (Déplacés du .h)
+
+int verifier_pseudo(const char* pseudo);
+int charger_partie(const char* pseudo, int* niveau_ptr, int* vies_ptr);
+int sauvegarder_partie(const char* pseudo, int niveau, int vies);
+
+
+// 1. VERIFICATION DU PSEUDO (Implémentation)
 
 int verifier_pseudo(const char* pseudo) {
     FILE *fichier_sauvegarde = NULL;
@@ -30,8 +46,7 @@ int verifier_pseudo(const char* pseudo) {
     return 1;
 }
 
-// 2. CHARGEMENT DE PARTIE
-
+// 2. CHARGEMENT DE PARTIE 
 int charger_partie(const char* pseudo, int* niveau_ptr, int* vies_ptr) {
     FILE *fichier_sauvegarde = NULL;
     char pseudo_lu[50];
@@ -61,8 +76,7 @@ int charger_partie(const char* pseudo, int* niveau_ptr, int* vies_ptr) {
 }
 
 
-// 3. SAUVEGARDE ET MISE A JOUR DE PARTIE
-
+// 3. SAUVEGARDE ET MISE A JOUR DE PARTIE 
 int sauvegarder_partie(const char* pseudo, int niveau, int vies) {
     FILE *sauvegardes = NULL;
     FILE *temp = NULL;
