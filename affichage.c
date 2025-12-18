@@ -3,17 +3,31 @@
 #include <conio.h>
 #include "affichage.h"
 
-// ================= OUTILS =================
+// Outils pour la gestion de la console
 void effacerEcran() {
-    system("cls");
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
 }
 
 void pauseAffichage() {
-    printf("\n\nAppuyez sur une touche...");
+    printf("\nAppuyez sur une touche pour continuer...");
     getch();
 }
 
-// ================= MENU PRINCIPAL =================
+// Transforme l'entier du plateau en symbole visuel
+char obtenirSymbole(int valeur) {
+    switch(valeur) {
+        case 1: return '$'; // Rose dans l'image
+        case 2: return '*'; // Orange
+        case 3: return '#'; // Violet
+        case 4: return '0'; // Gris
+        default: return ' ';
+    }
+}
+
 void afficherMenuPrincipal() {
     effacerEcran();
 
@@ -34,127 +48,84 @@ void afficherMenuPrincipal() {
     printf("#                                                      #\n");
     printf("########################################################\n\n");
 
-
     printf(" 1. Lire les regles du jeu\n");
     printf(" 2. Commencer une nouvelle partie\n");
     printf(" 3. Reprendre une partie sauvegardee\n");
     printf(" 4. Quitter\n");
 }
 
-// ================= REGLES =================
 void afficherRegles() {
     effacerEcran();
-
     printf("=============== REGLES DU JEU ===============\n\n");
-    printf("- Alignez des items identiques pour les eliminer\n");
-    printf("- Utilisez Z Q S D ou les fleches pour bouger\n");
-    printf("- ESPACE pour selectionner un item\n");
-    printf("- Remplissez le contrat avant la fin du temps\n");
-    printf("- Attention au nombre de coups limites !\n");
-
+    printf("- Alignez 3 items ou plus pour les collecter.\n");
+    printf("- Atteignez les objectifs du contrat.\n");
+    printf("- Utilisez ZQSD ou Fleches pour deplacer le curseur.\n");
+    printf("- ESPACE pour echanger deux items.\n");
     pauseAffichage();
 }
 
-// ================= COMMANDES =================
-void afficherMenuCommandes() {
-    effacerEcran();
-
-    printf("=============== COMMANDES ===============\n\n");
-    printf(" Z / Fleche Haut    : Monter\n");
-    printf(" S / Fleche Bas     : Descendre\n");
-    printf(" Q / Fleche Gauche  : Gauche\n");
-    printf(" D / Fleche Droite  : Droite\n");
-    printf(" ESPACE             : Selection\n");
-    printf(" P                  : Sauvegarder\n");
-    printf(" ECHAP              : Quitter la partie\n");
-
-    pauseAffichage();
-}
-
-// ================= AFFICHAGE DU JEU =================
 void afficherEcranJeu(
     int niveau,
     int vies,
     int temps,
     int coups,
-    int contrat[5],
-    int restant[5],
+    int contrat[4], // Valeurs à atteindre
+    int actuel[4],  // Valeurs déjà collectées
     int plateau[X][Y],
     int cx,
     int cy
 ) {
     effacerEcran();
 
-    printf("---- NIVEAU %02d ----   VIES : %d\n", niveau, vies);
-    printf("TEMPS : %03d s   COUPS : %02d\n\n", temps, coups);
+    // --- LIGNE SUPÉRIEURE (NIVEAU | TEMPS) ---
+    printf("-----NIVEAU %02d-----|------------------------------|---------TEMPS RESTANT----------|\n", niveau);
 
-    printf("CONTRAT :\n");
-    for (int i = 0; i < 5; i++) {
-        printf(" Item %d : %d / %d\n", i + 1, restant[i], contrat[i]);
-    }
+    // Affichage des coeurs (Vies)
+    printf("  ");
+    for(int i=0; i<3; i++) printf(i < vies ? "  <3 " : "    ");
+    printf("  |                              |             00:%02d              |\n", temps);
 
-    printf("\n");
+    printf("-------------------|                              |--------------------------------|\n");
 
+    // --- CORPS CENTRAL ---
+    printf("----CONTRAT--------|          JELLY BELLY         |---------COUPS RESTANTS---------|\n");
+    printf(" Remplir le contrat|                              |              %02d                |\n", coups);
+    printf(" en 30 coups max   |                              |--------------------------------|\n");
+    printf("-------------------|------------------------------|------------COMMANDES-----------|\n");
+
+    // --- BOUCLE DE DESSIN (OBJECTIFS | PLATEAU | COMMANDES) ---
     for (int i = 0; i < X; i++) {
+
+        // 1. Colonne GAUCHE (Objectifs)
+        if (i < 4) {
+            char s = obtenirSymbole(i + 1);
+            printf(" %c : %02d/%02d         |", s, actuel[i], contrat[i]);
+        } else if (i == 4) {
+            printf("-------------------|");
+        } else {
+            printf("                   |");
+        }
+
+        // 2. Colonne MILIEU (Le Plateau)
+        printf("  ");
         for (int j = 0; j < Y; j++) {
             if (i == cy && j == cx)
-                printf("[");
+                printf("[%c]", obtenirSymbole(plateau[i][j]));
             else
-                printf(" ");
+                printf(" %c ", obtenirSymbole(plateau[i][j]));
+        }
+        printf(" |");
 
-            if (plateau[i][j] == 0) printf(" ");
-            else printf("%d", plateau[i][j]);
-
-            if (i == cy && j == cx)
-                printf("]");
-            else
-                printf(" ");
+        // 3. Colonne DROITE (Commandes dynamiques selon la ligne)
+        switch(i) {
+            case 0: printf(" ----Bouger----   --Selection-- |"); break;
+            case 1: printf("    Z/Q/S/D          Espace     |"); break;
+            case 2: printf("    Fleches                     |"); break;
+            case 4: printf(" -Sauvegarde-     ---Quitter--- |"); break;
+            case 5: printf("       P              Echap     |"); break;
+            default: printf("                                |"); break;
         }
         printf("\n");
     }
-
-    printf("\nZQSD / Fleches | ESPACE | P | ECHAP\n");
+    printf("------------------------------------------------------------------------------------\n");
 }
-
-
-
-//---- petit main des familles pour observer l'affichage---------
-
-
-
-/* enlever ça si vous voulez tester :
-#define X 8
-#define Y 8
-
-int main() {
-    // Variables de test pour le plateau
-    int plateau[X][Y] = {
-        {1, 0, 2, 0, 3},
-        {0, 1, 0, 2, 0},
-        {3, 0, 1, 0, 2},
-        {0, 3, 0, 1, 0},
-        {2, 0, 3, 0, 1}
-    };
-
-    int contrat[5] = {3, 2, 4, 1, 5};
-    int restant[5] = {1, 0, 2, 0, 3};
-    int cx = 2, cy = 2; // Position du curseur
-    int niveau = 1, vies = 3, temps = 120, coups = 5;
-
-    // Affichage du menu principal
-    afficherMenuPrincipal();
-    pauseAffichage();
-
-    // Affichage des règles
-    afficherRegles();
-
-    // Affichage des commandes
-    afficherMenuCommandes();
-
-    // Affichage de l'écran de jeu
-    afficherEcranJeu(niveau, vies, temps, coups, contrat, restant, plateau, cx, cy);
-    pauseAffichage();
-
-    return 0;
-}
-*/
