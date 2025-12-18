@@ -2,8 +2,8 @@
 #include <conio.h>   // kbhit(), getch()
 #include <stdbool.h>
 
-#define LARGEUR 5
-#define HAUTEUR 5
+#define X 8
+#define Y 8
 
 // Lire une touche sans bloquer
 char lireTouche() {
@@ -14,17 +14,17 @@ char lireTouche() {
 }
 
 // Déplacer le curseur
-void deplacerCurseur(int *x, int *y, char touche, int Hauteur, int Largeur) {
+void deplacerCurseur(int *x, int *y, char touche, int X, int Y) {
     if (touche == 'z' && *y > 0){
       *y =-1;
     }// avancer vers le haut de l'écran 
-    if (touche == 's' && *y < Hauteur - 1){
+    if (touche == 's' && *y < Y - 1){
       *y =+1; // reculer
     }
     if (touche == 'q' && *x > 0){
       *x =-1; // avancer vers la gauche
     }
-    if (touche == 'd' && *x < Largeur - 1){
+    if (touche == 'd' && *x < X - 1){
       *x =+1; // avancer vers la droite
     }
 }
@@ -40,7 +40,7 @@ bool gererSelection(bool selectionActive, int *selX, int *selY, int x, int y) {
 }
 
 // Permuter deux items
-void permuterItems(int plateau[N][P], int x1, int y1, int x2, int y2) {
+void permuterItems(int plateau[X][Y], int x1, int y1, int x2, int y2) {
     int valeur1;
     int valeur2;
   
@@ -52,15 +52,15 @@ void permuterItems(int plateau[N][P], int x1, int y1, int x2, int y2) {
 }
 
 // Affichage du plateau
-void afficherPlateau(int plateau[N][P], int cx, int cy) {
+void afficherPlateau(int plateau[X][Y], int cx, int cy) {
     system("cls"); // effece l'écran
     
-    for (int y = 0; y < HAUTEUR; y++) {
-        for (int x = 0; x < LARGEUR; x++) { // parcourir le plateau
+    for (int y = 0; y < Y; y++) {
+        for (int x = 0; x < X; x++) { // parcourir le plateau
             if (x == cx && y == cy)
                 printf("[X] ");  // curseur
             else
-                printf(" %d  ", plateau[y][x]);
+                printf(" %d  ", plateau[X][Y]);
         }
         printf("\n");
     }
