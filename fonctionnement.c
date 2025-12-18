@@ -25,35 +25,7 @@ void remplirPlateau(int tab[X][Y]);
 int finDeNiveau(int contrat[5], int temps_restant, int coups_restant);
 int initNiveau(int difficulte, int contrat[5], int *temps_restant, int *coups_restant);
 int initPartie(int contrat[5], int temps_restant, int coups_restant);
-int tempsRestant();
-    
-    
-
-int main() {
-    srand(time(NULL)); 
-    int plateau[X][Y];
-    genererPlateau(plateau);
-    afficherPlateau(plateau);
-    printf("\n\n");
-    for(int i =0;i<X;i++){
-        for(int j=0;j<Y;j++){
-            plateau[i][j]=1;
-        }
-    }
-
-    
-while(presenceFigure(plateau)){
-    afficherPlateau(plateau);
-    printf("\n\n");
-    supprimerFigure(plateau);
-    afficherPlateau(plateau);
-    printf("\n\n");
-    remplirPlateau(plateau);
-    afficherPlateau(plateau);
-    
-}
-return 0;
-}
+int tempsRestant();   
 
 void genererPlateau(int tab[X][Y]) {
     do {
