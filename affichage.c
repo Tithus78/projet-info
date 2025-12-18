@@ -121,8 +121,13 @@ void afficherEcranJeu(
         // 2. Colonne MILIEU (Le Plateau)
         printf("  ");
         for (int j = 0; j < 8; j++) {
-            if (i == cy && j == cx)
-                printf("[%c]", obtenirSymbole(plateau[i][j]));
+            if (i == cy && j == cx){
+                setColor(7);
+                printf("[");
+                printf("%c", obtenirSymbole(plateau[i][j]));
+                setColor(7);
+                printf("]");
+                }
             else
                 printf(" %c ", obtenirSymbole(plateau[i][j]));
         }setColor(7);
