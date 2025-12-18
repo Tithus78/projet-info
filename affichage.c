@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <conio.h>
 #include "affichage.h"
-
+#define X 8
+#define Y 8
 // Outils pour la gestion de la console
 void effacerEcran() {
     #ifdef _WIN32
