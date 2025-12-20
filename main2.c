@@ -1,86 +1,50 @@
-/* =============================================================
-   PROJET MATCH-3 - ECE 2025 - VERSION CUSTOM FINALISÉE
-   - Permutations libres (Même sans match)
-   - Style d'affichage "0" colorés
-   - Panneau de contrôles ajouté et corrigé (alignement)
-   ============================================================= */
-
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <conio.h>
 #include <windows.h>
 #include <stdbool.h>
+#include <time.h>
 #include <string.h>
 
-// --- CONSTANTES & CONFIG ---
-#define NB_LIGNES 9  
-#define NB_COLONNES 9 
-#define FILENAME "sauvegardes.txt"
-#define TEMP_FILENAME "temp.txt"
+HANDLE hConsole;
 
-// --- COULEURS ---
-#define BLACK           0
-#define BLUE            1
-#define GREEN           2
-#define CYAN            3
-#define RED             4
-#define MAGENTA         5
-#define BROWN           6
-#define LIGHTGRAY       7
-#define DARKGRAY        8
-#define LIGHTBLUE       9
-#define LIGHTGREEN      10
-#define LIGHTCYAN       11
-#define LIGHTRED        12
-#define LIGHTMAGENTA    13
-#define YELLOW          14
-#define WHITE           15
+// =======================
+// GESTION COULEUR/CONSOLE
+// =======================
+void setColor(int color) { SetConsoleTextAttribute(hConsole, color); }
 
-// --- VARIABLES GLOBALES POUR L'AFFICHAGE ---
-static int __BACKGROUND = BLACK;
-static int __FOREGROUND = WHITE;
 
-// =============================================================
-//                    OUTILS CONSOLE
-// =============================================================
 
-void viderBuffer() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
+void pauseAffichage() {
+    printf("\nAppuyez sur une touche pour continuer...");
+    getch();
 }
 
-void clrscr() {
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    DWORD written;
-    COORD home = {0, 0};
-    if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) return;
-    DWORD cellCount = csbi.dwSize.X * csbi.dwSize.Y;
-    FillConsoleOutputCharacter(hConsole, ' ', cellCount, home, &written);
-    FillConsoleOutputAttribute(hConsole, csbi.wAttributes, cellCount, home, &written);
-    SetConsoleCursorPosition(hConsole, home);
+// =======================
+// AFFICHAGE PLATEAU & MENU
+// =======================
+char obtenirSymbole(int valeur) {
+    switch(valeur){
+        case 1: setColor(13); return 'O'; // violet
+        case 2: setColor(12); return 'O'; // rose
+        case 3: setColor(10); return 'O'; // vert
+        case 4: setColor(14); return 'O'; // jaune
+        case 5: setColor(11); return 'O'; // cyan
+        default: setColor(7); return ' ';
+    }
 }
+// Ajoutez ces variables globales pour la gestion des couleurs si vous utilisez text_color
+int __FOREGROUND = 7;
+int __BACKGROUND = 0;
+
+// =======================
+// GESTION CONSOLE (ANTI-CLIGNOTEMENT)
+// =======================
 
 void gotoxy(int x, int y) {
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    COORD c;
-    c.X = x; 
-    c.Y = y;
+    COORD c = { (SHORT)x, (SHORT)y };
     SetConsoleCursorPosition(h, c);
-}
-
-void text_color(int color) {
-    __FOREGROUND = color;
-    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(h, __FOREGROUND + (__BACKGROUND << 4));
-}
-
-void bg_color(int color) {
-    __BACKGROUND = color;
-    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(h, __FOREGROUND + (__BACKGROUND << 4));
 }
 
 void hide_cursor() {
@@ -90,677 +54,490 @@ void hide_cursor() {
     inf.bVisible = 0;
     SetConsoleCursorInfo(cH, &inf);
 }
-
-void show_cursor() {
-    HANDLE cH = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_CURSOR_INFO inf;
-    GetConsoleCursorInfo(cH, &inf);
-    inf.bVisible = 1;
-    SetConsoleCursorInfo(cH, &inf);
-}
-
-void effacerEcran() {
-    clrscr();
-}
-
-void pauseAffichage() {
-    printf("\nAppuyez sur une touche pour continuer...");
-    getch();
-}
-
-void cls(){
+void effacerEcranTotal() {
     system("cls");
 }
-
-// =============================================================
-//                    LOGIQUE DU JEU
-// =============================================================
-
-void initNiveau(int difficulte, int contrat[5], int *temps_restant, int *coups_restant){
-    for(int i=0; i<5; i++) contrat[i] = 0;
-
-    if (difficulte == 1) {
-        contrat[0] = rand()%5+6; contrat[1] = rand()%5+6; contrat[2] = rand()%5+6; 
-        *temps_restant = 120; 
-        *coups_restant = 20;
-    }
-    else if (difficulte == 2) {
-        contrat[0] = rand()%6+8; contrat[1] = rand()%6+8; contrat[2] = rand()%6+8; contrat[3] = rand()%6+8;
-        *temps_restant = 100; 
-        *coups_restant = 25;
-    }
-    else if (difficulte == 3) {
-        contrat[0] = rand()%8+10; contrat[1] = rand()%8+10; contrat[2] = rand()%8+10; contrat[3] = rand()%8+10; contrat[4] = rand()%8+10;
-        *temps_restant = 80;
-        *coups_restant = 30;
-    }
-    else { 
-        contrat[0] = 15; contrat[1] = 15; contrat[2] = 15; contrat[3] = 15; contrat[4] = 15;
-        *temps_restant = 60; 
-        *coups_restant = 35;
-    }
+// Remplacez votre effacerEcran par ceci
+void effacerEcran() {
+    gotoxy(0, 0); // On ne vide pas, on se repositionne juste au début
 }
-
-// Detections
-int figure3itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES;i++){ for(int j = 0; j< NB_COLONNES-2;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i][j+1] && c1 == tab[i][j+2]) return c1; }} return 0;
-}
-int figure3itemVertical(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES-2;i++){ for(int j = 0; j< NB_COLONNES;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i+1][j] && c1 == tab[i+2][j]) return c1; }} return 0;
-}
-int figure4itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES;i++){ for(int j = 0; j< NB_COLONNES-3;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i][j+1] && c1 == tab[i][j+2] && c1 == tab[i][j+3]) return c1; }} return 0;
-}
-int figure4itemVertical(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES-3;i++){ for(int j = 0; j< NB_COLONNES;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i+1][j] && c1 == tab[i+2][j] && c1 == tab[i+3][j]) return c1; }} return 0;
-}
-int figure6itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES;i++){ for(int j = 0; j< NB_COLONNES-5;j++){ int c1=tab[i][j]; if(c1!=0 && c1==tab[i][j+1] && c1==tab[i][j+2] && c1==tab[i][j+3] && c1==tab[i][j+4] && c1==tab[i][j+5]) return c1; }} return 0;
-}
-int figure6itemVertical(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES-5;i++){ for(int j = 0; j< NB_COLONNES;j++){ int c1=tab[i][j]; if(c1!=0 && c1==tab[i+1][j] && c1==tab[i+2][j] && c1==tab[i+3][j] && c1==tab[i+4][j] && c1==tab[i+5][j]) return c1; }} return 0;
-}
-int figure9croix(int tab[NB_LIGNES][NB_COLONNES]){
-    int c3;
-    for(int i=2; i<NB_LIGNES-2; i++){
-        for(int j=2; j<NB_COLONNES-2; j++){
-            c3 = tab[i][j];
-            if(c3!=0 && c3==tab[i][j-2] && c3==tab[i][j-1] && c3==tab[i][j+1] && c3==tab[i][j+2] 
-               && c3==tab[i-2][j] && c3==tab[i-1][j] && c3==tab[i+1][j] && c3==tab[i+2][j]) 
-            return c3;
-        }
-    }
-    return 0;
-}
-int figurecarre(int tab[NB_LIGNES][NB_COLONNES]){
-    int c1;
-    for(int i=0; i<NB_LIGNES-3; i++){
-        for(int j=0; j<NB_COLONNES-3; j++){
-            c1 = tab[i][j];
-            if(c1!=0 && c1==tab[i+1][j] && c1==tab[i+2][j] && c1==tab[i+3][j] &&
-               c1==tab[i][j+1] && c1==tab[i][j+2] && c1==tab[i][j+3] &&
-               c1==tab[i+3][j+1] && c1==tab[i+3][j+2] && 
-               c1==tab[i+1][j+3] && c1==tab[i+2][j+3] && c1==tab[i+3][j+3])
-            return c1;
-        }
-    }
-    return 0;
-}
-
-bool presenceFigure(int tab[NB_LIGNES][NB_COLONNES]){
-    if(figure4itemVertical(tab)) return true;          
-    else if(figure4itemHorizontale(tab)) return true; 
-    else if(figure3itemVertical(tab)) return true;
-    else if(figure3itemHorizontale(tab)) return true;
-    else return false;
-}
-
-void genererPlateau(int tab[NB_LIGNES][NB_COLONNES]) {
-    do {
-        for (int i = 0; i < NB_LIGNES; i++) {
-            for (int j = 0; j < NB_COLONNES; j++) {
-                tab[i][j] = rand() % 5 + 1; 
-            }
-        }
-    } while (presenceFigure(tab)); 
-}
-
-void permuterItems(int plateau[NB_LIGNES][NB_COLONNES], int x1, int y1, int x2, int y2) {
-    int temp = plateau[y1][x1];
-    plateau[y1][x1] = plateau[y2][x2];
-    plateau[y2][x2] = temp;
-}
-
-void majContrat(int valeur, int contrat[5], int actuel[5]) {
-    if (valeur >= 1 && valeur <= 5) {
-        actuel[valeur-1]++; 
-        if (contrat[valeur-1] > 0) {
-            contrat[valeur-1]--;
-        }
-    }
-}
-
-void supprimerFigure(int tab[NB_LIGNES][NB_COLONNES], int contrat[5], int actuel[5]){
-    int valeur;
-    while(presenceFigure(tab)){
-        if((valeur = figure9croix(tab))){ 
-            for(int i=2; i<NB_LIGNES-2; i++){
-                for(int j=2; j<NB_COLONNES-2; j++){
-                     if(tab[i][j]==valeur && 
-                       tab[i][j-2]==valeur && tab[i][j-1]==valeur && tab[i][j+1]==valeur && tab[i][j+2]==valeur &&
-                       tab[i-2][j]==valeur && tab[i-1][j]==valeur && tab[i+1][j]==valeur && tab[i+2][j]==valeur){
-                          for(int k=0; k<NB_COLONNES; k++) { if(tab[i][k] != 0) { majContrat(tab[i][k], contrat, actuel); tab[i][k] = 0; } }
-                          for(int k=0; k<NB_LIGNES; k++) { if(tab[k][j] != 0) { majContrat(tab[k][j], contrat, actuel); tab[k][j] = 0; } }
-                     }
-                }
-            }
-        }
-        else if((valeur = figurecarre(tab))){
-             for(int i=0; i<NB_LIGNES-3; i++){
-                for(int j=0; j<NB_COLONNES-3; j++){
-                    int c1 = tab[i][j];
-                    if(c1==valeur && tab[i+1][j]==valeur && tab[i+2][j]==valeur && tab[i+3][j]==valeur &&
-                       tab[i][j+1]==valeur && tab[i][j+2]==valeur && tab[i][j+3]==valeur){
-                        for(int k=0; k<4; k++) for(int l=0; l<4; l++) {
-                            if(tab[i+k][j+l] != 0) { majContrat(tab[i+k][j+l], contrat, actuel); tab[i+k][j+l] = 0; }
-                        }
-                    }
-                }
-             }
-        }
-        else if((valeur = figure6itemHorizontale(tab))){
-            for(int i=0;i<NB_LIGNES;i++){
-                for(int j=0;j<NB_COLONNES-5;j++){
-                    if(tab[i][j]==valeur && tab[i][j+1]==valeur && tab[i][j+5]==valeur){
-                         for(int k=0; k<NB_LIGNES; k++) for(int l=0; l<NB_COLONNES; l++) {
-                             if(tab[k][l]==valeur) { majContrat(tab[k][l], contrat, actuel); tab[k][l]=0; }
-                         }
-                    }
-                }
-            }
-        }
-        else if((valeur = figure6itemVertical(tab))){
-             for(int k=0; k<NB_LIGNES; k++) for(int l=0; l<NB_COLONNES; l++) {
-                 if(tab[k][l]==valeur) { majContrat(tab[k][l], contrat, actuel); tab[k][l]=0; }
-             }
-        }
-        else if((valeur = figure4itemHorizontale(tab))){
-            for(int i=0;i<NB_LIGNES;i++){
-                for(int j=0;j<NB_COLONNES-3;j++){
-                    if(tab[i][j]==valeur && tab[i][j+1]==valeur && tab[i][j+2]==valeur && tab[i][j+3]==valeur){
-                        for(int k=0; k<4; k++) { majContrat(tab[i][j+k], contrat, actuel); tab[i][j+k] = 0; }
-                    }
-                }
-            }
-        }
-        else if((valeur = figure4itemVertical(tab))){
-            for(int i=0;i<NB_LIGNES-3;i++){
-                for(int j=0;j<NB_COLONNES;j++){
-                    if(tab[i][j]==valeur && tab[i+1][j]==valeur && tab[i+2][j]==valeur && tab[i+3][j]==valeur){
-                        for(int k=0; k<4; k++) { majContrat(tab[i+k][j], contrat, actuel); tab[i+k][j] = 0; }
-                    }
-                }
-            }
-        }
-        else if((valeur = figure3itemHorizontale(tab))){
-            for(int i=0;i<NB_LIGNES;i++){
-                for(int j=0;j<NB_COLONNES-2;j++){
-                    if(tab[i][j]==valeur && tab[i][j+1]==valeur && tab[i][j+2]==valeur){
-                        for(int k=0; k<3; k++) { majContrat(tab[i][j+k], contrat, actuel); tab[i][j+k] = 0; }
-                    }
-                }
-            }
-        }
-        else if((valeur = figure3itemVertical(tab))){
-            for(int i=0;i<NB_LIGNES-2;i++){
-                for(int j=0;j<NB_COLONNES;j++){
-                    if(tab[i][j]==valeur && tab[i+1][j]==valeur && tab[i+2][j]==valeur){
-                        for(int k=0; k<3; k++) { majContrat(tab[i+k][j], contrat, actuel); tab[i+k][j] = 0; }
-                    }
-                }
-            }
-        }
-        else valeur = 0;
-    }
-}
-
-void remplirPlateau(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int j=0; j<NB_COLONNES; j++){ 
-        int compteur = 0; 
-        for(int i=NB_LIGNES-1; i>=0; i--){ 
-            if(tab[i][j]==0) compteur++;
-            else if(compteur>0){
-                tab[i+compteur][j] = tab[i][j]; 
-                tab[i][j] = 0; 
-            }
-        }
-        for(int i=0; i<compteur; i++) tab[i][j] = rand()%5 +1;
-    }
-}
-
-int finDeNiveau(int contrat[5], int temps_restant, int coups_restant){
-    if (contrat[0]<=0 && contrat[1]<=0 && contrat[2]<= 0 && contrat[3]<=0 && contrat[4] <= 0) return 0; // Gagne
-    if (temps_restant <= 0) return 1; // Perdu
-    if (coups_restant <= 0) return 1; // Perdu
-    return 2; // En cours
-}
-
-// =============================================================
-//                    AFFICHAGE MODIFIE (STYLE 0 + CONTROLES)
-// =============================================================
-
-// Retourne toujours '0' si c'est un item (1-5)
-char obtenirSymbole(int valeur) {
-    if (valeur >= 1 && valeur <= 5) return '0';
-    return ' ';
-}
-
-// Couleurs vives pour les différents 0
-int obtenirCouleur(int valeur) {
-    switch(valeur) {
-        case 1: return LIGHTRED;      // 0 Rouge
-        case 2: return LIGHTBLUE;     // 0 Bleu
-        case 3: return LIGHTGREEN;    // 0 Vert
-        case 4: return YELLOW;        // 0 Jaune
-        case 5: return LIGHTMAGENTA;  // 0 Magenta
-        default: return WHITE;
-    }
-}
-
 void afficherMenuPrincipal() {
     effacerEcran();
-    text_color(LIGHTGREEN);
-    printf("########################################\n");
-    printf("#             JELLY BELLY              #\n");
-    printf("########################################\n\n");
-    text_color(WHITE);
-    printf(" 1. Regles\n");
-    printf(" 2. Nouvelle partie\n");
-    printf(" 3. Charger partie\n");
-    printf(" 4. Quitter\n\n");
-}
-
-int afficherMenuFinNiveau() {
-    effacerEcran();
-    text_color(LIGHTGREEN);
-    printf("########################################\n");
-    printf("#            NIVEAU GAGNE !            #\n");
-    printf("########################################\n\n");
-    text_color(WHITE);
-    printf(" 1. Continuer vers le niveau suivant\n");
-    printf(" 2. Sauvegarder et Quitter\n\n");
-    printf(" Votre choix : ");
-    
-    int choix;
-    show_cursor();
-    if(scanf("%d", &choix) != 1) choix = 0;
-    viderBuffer();
-    hide_cursor();
-    return choix;
-}
-
-int afficherEcranVictoire() {
-    effacerEcran();
-    bg_color(BLACK);
-    
-    text_color(YELLOW);
-    printf("\n\n");
-    printf("   ******************************************\n");
-    printf("   * *\n");
-    printf("   * CHAMPION DU MATCH-3            *\n");
-    printf("   * *\n");
-    printf("   ******************************************\n\n");
-    
-    text_color(LIGHTGREEN);
-    printf("      FELICITATIONS ! VOUS AVEZ FINI LE JEU !\n");
-    printf("      Tous les niveaux ont ete completes.\n\n");
-
-    text_color(WHITE);
-    printf("   1. Retourner au Menu Principal\n");
-    printf("   2. Quitter le programme\n\n");
-    printf("   Votre choix : ");
-
-    int choix;
-    show_cursor();
-    if(scanf("%d", &choix) != 1) choix = 0;
-    viderBuffer();
-    hide_cursor();
-    return choix;
-}
-
-int afficherEcranDefaite() {
-    effacerEcran();
-    bg_color(BLACK);
-    
-    text_color(LIGHTRED);
-    printf("\n\n");
-    printf("   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-    printf("   x                                        x\n");
-    printf("   x               GAME OVER                x\n");
-    printf("   x                                        x\n");
-    printf("   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n");
-
-    text_color(WHITE);
-    printf("      Vous n'avez plus de vies...\n");
-    printf("      Ne lachez rien, reessayez !\n\n");
-
-    printf("   1. Retourner au Menu Principal\n");
-    printf("   2. Quitter le programme\n\n");
-    printf("   Votre choix : ");
-
-    int choix;
-    show_cursor();
-    if(scanf("%d", &choix) != 1) choix = 0;
-    viderBuffer();
-    hide_cursor();
-    return choix;
+    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    setColor(87);
+    printf("########################################################\n");
+    printf("#                                                      #\n");
+    printf("#          ######  #####  ##     ##    ##    ##        #\n");
+    printf("#            ##    ##     ##     ##     ##  ##         #\n");
+    printf("#            ##    ####   ##     ##       ##           #\n");
+    printf("#         ## ##    ##     ##     ##       ##           #\n");
+    printf("#          ###     #####  #####  #####    ##           #\n");
+    printf("#                                                      #\n");
+    printf("#                                                      #\n");
+    printf("#         ######   #####  ##     ##    ##    ##        #\n");
+    printf("#         ##  ##   ##     ##     ##     ##  ##         #\n");
+    printf("#         #####    ####   ##     ##       ##           #\n");
+    printf("#         ##  ##   ##     ##     ##       ##           #\n");
+    printf("#         #####    #####  #####  #####    ##           #\n");
+    printf("#                                                      #\n");
+    printf("########################################################\n\n");
+    setColor(7);
+    printf(" 1. Lire les regles du jeu\n");
+    printf(" 2. Commencer une nouvelle partie\n");
+    printf(" 3. Reprendre une partie sauvegardee\n");
+    printf(" 4. Quitter\n");
 }
 
 void afficherRegles() {
     effacerEcran();
-    printf("REGLES DU JEU:\n");
-    printf("- Alignez 3 symboles identiques ou plus.\n");
-    printf("- Remplissez le contrat avant la fin du temps ou des coups.\n");
-    printf("- Z/Q/S/D ou Fleches pour bouger.\n");
-    printf("- ESPACE pour selectionner/permuter.\n");
-    printf("- ECHAP pour quitter la partie en cours.\n\n");
+    printf("=============== REGLES DU JEU ===============\n\n");
+    printf("- Alignez 3 items ou plus pour les collecter.\n");
+    printf("- Atteignez les objectifs du contrat.\n");
+    printf("- Utilisez ZQSD pour deplacer le curseur.\n");
+    printf("- ESPACE pour echanger deux items.\n");
     pauseAffichage();
 }
+int coupscontrat = 0;
+int tempscontrat = 0;
+// On ajoute selX, selY et selectionActive pour l'encadré rouge
+void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5], int actuel[5], int plateau[8][8], int cx, int cy, int selX, int selY, bool selectionActive) {
+    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-// MODIFICATION : Nouvelle fonction d'affichage avec Panneau de Contrôle corrigé
-void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5], int actuel[5], int plateau[NB_LIGNES][NB_COLONNES], int cx, int cy, int selX, int selY) {
-    gotoxy(0,0);
-    text_color(WHITE);
-    printf("NIV: %d | VIES: %d | TEMPS: %03d | COUPS: %02d     \n", niveau, vies, temps, coups);
-    printf("----------------------------------------------------------\n");
-    
-    // Contrats
-    printf("CONTRAT : ");
-    for(int i=0; i<5; i++) {
-        if(contrat[i] > 0) {
-            text_color(obtenirCouleur(i+1));
-            printf("%c:%d ", obtenirSymbole(i+1), contrat[i]);
-        } else if(contrat[i] <= 0 && actuel[i] > 0) { 
-            text_color(GREEN);
-            printf("%c:OK ", obtenirSymbole(i+1));
+    // ANTI-CLIGNOTEMENT : On remonte au début au lieu de tout effacer
+    gotoxy(0, 0);
+
+    int minutes = temps / 60;
+    int secondes = temps % 60;
+
+    printf("-----NIVEAU %02d-----|---------------------------|---------TEMPS RESTANT----------|\n", niveau);
+
+    setColor(12);
+    printf("  ");
+    for (int i = 0; i < 3; i++) printf(i < vies ? " <3 " : "    ");
+    setColor(7);
+    printf("     |                           |             %02d:%02d              |\n", minutes, secondes);
+
+    printf("-------------------|                           |                                |\n");
+    printf("----CONTRAT--------|");
+    setColor(9); printf("         JELLY BELLY       "); setColor(7);
+    printf("|---------COUPS RESTANTS---------|\n");
+    printf(" Remplir le contrat|                           |                                |\n");
+    printf(" en %02d coups max   |                           |               %02d               |\n", coupscontrat, coups);
+    printf(" et en %d min max   |                           |                                |\n", tempscontrat);
+    printf("-------------------|---------------------------|------------COMMANDES-----------|\n");
+    printf("                   |                           |                                |\n");
+
+    for (int i = 0; i < 8; i++) {
+        // Objectifs
+        if (i < 5) {
+            char s = obtenirSymbole(i + 1);
+            printf(" %c", s);
+            setColor(7);
+            printf(" : %02d/%02d         |", actuel[i], contrat[i]);
+        } else {
+            printf("                   |");
         }
-    }
-    text_color(WHITE);
-    printf("\n----------------------------------------------------------\n");
-    // CORRECTION ICI : Suppression du "9x9" et réalignement
-    printf("|         PLATEAU            |         CONTROLES        |\n");
-    printf("----------------------------------------------------------\n");
 
-    for (int i = 0; i < NB_LIGNES; i++) {
-        printf("|");
-        // PLATEAU (Gauche)
-        for (int j = 0; j < NB_COLONNES; j++) {
-            if (i == cy && j == cx) {
-                bg_color(BLUE);
-                text_color(obtenirCouleur(plateau[i][j]));
+        printf("  ");
+        // Plateau
+        for (int j = 0; j < 8; j++) {
+            // Logique d'encadrement
+            if (selectionActive && i == selY && j == selX) {
+                setColor(12); // ROUGE pour la sélection
                 printf("[%c]", obtenirSymbole(plateau[i][j]));
-                bg_color(BLACK);
-            }
-            else if (i == selY && j == selX) {
-                bg_color(RED);
-                text_color(obtenirCouleur(plateau[i][j]));
-                printf(" %c ", obtenirSymbole(plateau[i][j]));
-                bg_color(BLACK);
-            }
-            else {
-                text_color(obtenirCouleur(plateau[i][j]));
+            } else if (i == cy && j == cx) {
+                setColor(7); // BLANC pour le curseur normal
+                printf("[%c]", obtenirSymbole(plateau[i][j]));
+            } else {
                 printf(" %c ", obtenirSymbole(plateau[i][j]));
             }
         }
-        text_color(WHITE);
-        printf(" | ");
-        
-        // CONTROLES (Droite)
-        switch(i) {
-            case 1: printf(" Z/Q/S/D : Deplacer      "); break;
-            // CORRECTION ICI : "Fleches" sans accent pour l'alignement
-            case 2: printf(" Fleches : Deplacer      "); break;
-            case 4: printf(" ESPACE  : Selectionner  "); break;
-            case 5: printf("           Permuter      "); break;
-            case 7: printf(" ECHAP   : Quitter       "); break;
-            default:printf("                         "); break;
+        setColor(7);
+        printf(" |");
+
+        // Commandes
+        switch (i) {
+            case 0: printf(" ----Bouger----   --Selection-- |"); break;
+            case 1: printf("    Z/Q/S/D          Espace     |"); break;
+            case 4: printf(" -Sauvegarde-     ---Quitter--- |"); break;
+            case 5: printf("       P              Echap     |"); break;
+            default: printf("                                |"); break;
         }
-        printf("|\n");
+        printf("\n");
     }
-    printf("----------------------------------------------------------\n");
+    printf("-------------------|---------------------------|---------------------------------\n");
 }
 
-// =============================================================
-//                    SAUVEGARDE
-// =============================================================
+// =======================
+// GESTION PLATEAU & FIGURES
+// =======================
 
-int verifier_pseudo(const char* pseudo) {
-    FILE *fichier = fopen(FILENAME, "r");
-    char lu[50];
-    int n, v;
-    if (fichier == NULL) return 1;
-    while (fscanf(fichier, "%s %d %d", lu, &n, &v) == 3) {
-        if (strcmp(lu, pseudo) == 0) {
-            fclose(fichier);
-            return 0; 
-        }
-    }
-    fclose(fichier);
-    return 1;
-}
 
-int charger_partie(const char* pseudo, int* niveau_ptr, int* vies_ptr) {
-    FILE *fichier = fopen(FILENAME, "r");
-    char lu[50];
-    int n, v;
-    if (fichier == NULL) return 0;
-    while (fscanf(fichier, "%s %d %d", lu, &n, &v) == 3) {
-        if (strcmp(lu, pseudo) == 0) {
-            *niveau_ptr = n;
-            *vies_ptr = v;
-            fclose(fichier);
-            return 1;
-        }
-    }
-    fclose(fichier);
+int figure3Horizontale(int tab[8][8]){
+    for(int i=0;i<8;i++)
+        for(int j=0;j<6;j++)
+            if(tab[i][j]!=0 && tab[i][j]==tab[i][j+1] && tab[i][j]==tab[i][j+2])
+                return tab[i][j];
     return 0;
 }
 
-int sauvegarder_partie(const char* pseudo, int niveau, int vies) {
-    FILE *check = fopen(FILENAME, "a");
-    if(check) fclose(check);
+int figure3Verticale(int tab[8][8]){
+    for(int i=0;i<6;i++)
+        for(int j=0;j<8;j++)
+            if(tab[i][j]!=0 && tab[i][j]==tab[i+1][j] && tab[i][j]==tab[i+2][j])
+                return tab[i][j];
+    return 0;
+}
 
-    FILE *sauvegardes = fopen(FILENAME, "r");
-    FILE *temp = fopen(TEMP_FILENAME, "w");
-    char lu[50];
-    int n, v;
-    int trouve = 0;
+int figure4itemHorizontale(int tab[8][8]){
+    for(int i=0;i<8;i++)
+        for(int j=0;j<5;j++)
+            if(tab[i][j]!=0 && tab[i][j]==tab[i][j+1] && tab[i][j]==tab[i][j+2] && tab[i][j]==tab[i][j+3])
+                return tab[i][j];
+    return 0;
+}
 
-    if (temp == NULL) return 0;
+int figure4itemVertical(int tab[8][8]){
+    for(int i=0;i<5;i++)
+        for(int j=0;j<8;j++)
+            if(tab[i][j]!=0 && tab[i][j]==tab[i+1][j] && tab[i][j]==tab[i+2][j] && tab[i][j]==tab[i+3][j])
+                return tab[i][j];
+    return 0;
+}
+bool presenceFigure(int tab[8][8]){
+    if(figure4itemVertical(tab)) return true;
+    if(figure4itemHorizontale(tab)) return true;
+    if(figure3Horizontale(tab)) return true;
+    if(figure3Verticale(tab)) return true;
+    return false;
+}
 
-    if (sauvegardes != NULL) {
-        while (fscanf(sauvegardes, "%s %d %d", lu, &n, &v) == 3) {
-            if (strcmp(lu, pseudo) == 0) {
-                fprintf(temp, "%s %d %d\n", pseudo, niveau, vies);
-                trouve = 1;
-            } else {
-                fprintf(temp, "%s %d %d\n", lu, n, v);
+void genererPlateau(int tab[8][8]){
+    do{
+        for(int i=0;i<8;i++) for(int j=0;j<8;j++) tab[i][j] = rand()%5+1;
+    } while(presenceFigure(tab));
+}
+// Fonction simplifiée pour supprimer toutes figures et mettre à jour objectifs
+
+// Remplir plateau
+void remplirPlateau(int tab[8][8]){
+    for(int j=0;j<8;j++){
+        int compteur=0;
+        for(int i=7;i>=0;i--){
+            if(tab[i][j]==0) compteur++;
+            else if(compteur>0){ tab[i+compteur][j]=tab[i][j]; tab[i][j]=0; }
+        }
+        for(int i=0;i<compteur;i++) tab[i][j]=rand()%5+1;
+    }
+}
+
+
+void supprimerFigure(int tab[8][8], int actuel[5]) {
+    bool trouve;
+
+    do {
+        trouve = false;
+        bool aSupprimer[8][8] = {false};
+
+        // HORIZONTAL
+        for (int i = 0; i < 8; i++) {
+            int count = 1;
+            for (int j = 1; j <= 8; j++) {
+                if (j < 8 && tab[i][j] != 0 && tab[i][j] == tab[i][j-1]) {
+                    count++;
+                } else {
+                    if (count >= 3 && tab[i][j-1] != 0) {
+                        trouve = true;
+                        for (int k = 0; k < count; k++) {
+                            aSupprimer[i][j-1-k] = true;
+                        }
+                    }
+                    count = 1;
+                }
             }
+        }
+
+        // VERTICAL
+        for (int j = 0; j < 8; j++) {
+            int count = 1;
+            for (int i = 1; i <= 8; i++) {
+                if (i < 8 && tab[i][j] != 0 && tab[i][j] == tab[i-1][j]) {
+                    count++;
+                } else {
+                    if (count >= 3 && tab[i-1][j] != 0) {
+                        trouve = true;
+                        for (int k = 0; k < count; k++) {
+                            aSupprimer[i-1-k][j] = true;
+                        }
+                    }
+                    count = 1;
+                }
+            }
+        }
+
+        // SUPPRESSION + COMPTAGE
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                if (aSupprimer[i][j]) {
+                    int val = tab[i][j];
+                    if (val >= 1 && val <= 5)
+                        actuel[val - 1]++;
+                    tab[i][j] = 0;
+                }
+            }
+        }
+
+        if (trouve) remplirPlateau(tab);
+
+    } while (trouve);
+}
+
+
+
+
+// =======================
+// GESTION CURSEUR & ITEMS
+// =======================
+char lireTouche(){ if(kbhit()) return getch(); return '\0'; }
+
+void deplacerCurseur(int *x,int *y,char touche){
+    if(touche=='z' && *y>0) (*y)--;
+    if(touche=='s' && *y<7) (*y)++;
+    if(touche=='q' && *x>0) (*x)--;
+    if(touche=='d' && *x<7) (*x)++;
+}
+
+bool sontAdjacents(int x1,int y1,int x2,int y2){
+    return (abs(x1-x2)+abs(y1-y2))==1;
+}
+
+void permuterItems(int tab[8][8],int x1,int y1,int x2,int y2){
+    int tmp = tab[y1][x1];
+    tab[y1][x1]=tab[y2][x2];
+    tab[y2][x2]=tmp;
+}
+
+// =======================
+// GESTION NIVEAUX & FIN
+// =======================
+int finDeNiveau(int contrat[5], int actuel[5], int temps, int coups) {
+    if (temps <= 0 || coups <= 0) return -1; // PERDU
+
+    for (int i = 0; i < 5; i++)
+        if (actuel[i] < contrat[i])
+            return 0; // EN COURS
+
+    return 1; // GAGNÉ
+}
+
+
+void initNiveau(int niveau,int contrat[5],int *temps,int *coups,int actuel[5],int plateau[8][8]){
+    for(int i=0;i<5;i++){
+        if(niveau==1) contrat[i]=rand()%8+5;
+        else if(niveau==2) contrat[i]=rand()%10+10;
+        else contrat[i]=rand()%15+15;
+        actuel[i]=0;
+    }
+
+    if(niveau==1){ *temps=180; *coups=20;coupscontrat = 20;tempscontrat = 3; }
+    else if(niveau==2){ *temps=120; *coups=25;coupscontrat = 25;tempscontrat = 2; }
+    else{ *temps=60; *coups=35;coupscontrat = 35;tempscontrat = 1; }
+
+    genererPlateau(plateau);
+    supprimerFigure(plateau, actuel);
+}
+
+// =======================
+// SAUVEGARDE
+// =======================
+typedef struct { char pseudo[50]; int niveau_atteint; int vies_restantes; } SauvegardePartie;
+#define FILENAME "sauvegardes.txt"
+#define TEMP_FILENAME "temp.txt"
+
+int sauvegarder_partie(const char* pseudo,int niveau,int vies){
+    FILE *sauvegardes=NULL,*temp=NULL;
+    char pseudo_lu[50]; int niveau_lu,vies_lu; bool pseudo_trouve=false;
+
+    temp=fopen(TEMP_FILENAME,"w");
+    if(!temp) return 0;
+
+    sauvegardes=fopen(FILENAME,"r");
+    if(sauvegardes){
+        while(fscanf(sauvegardes,"%s %d %d",pseudo_lu,&niveau_lu,&vies_lu)==3){
+            if(strcmp(pseudo_lu,pseudo)==0){
+                fprintf(temp,"%s %d %d\n",pseudo,niveau,vies);
+                pseudo_trouve=true;
+            } else fprintf(temp,"%s %d %d\n",pseudo_lu,niveau_lu,vies_lu);
         }
         fclose(sauvegardes);
     }
-    if (!trouve) {
-        fprintf(temp, "%s %d %d\n", pseudo, niveau, vies);
-    }
+
+    if(!pseudo_trouve) fprintf(temp,"%s %d %d\n",pseudo,niveau,vies);
     fclose(temp);
     remove(FILENAME);
-    rename(TEMP_FILENAME, FILENAME);
+    rename(TEMP_FILENAME,FILENAME);
     return 1;
 }
 
-// =============================================================
-//                    PROGRAMME PRINCIPAL (MAIN)
-// =============================================================
-
-int main() {
-    srand((unsigned int)time(NULL));
-    system("mode con: cols=100 lines=30"); 
-    hide_cursor();
-    
-    int choix = 0;
-    char pseudo[50];
-
-    // BOUCLE GLOBALE (Menu Principal)
-    while(choix != 4) {
-        afficherMenuPrincipal();
-        printf("Votre choix : ");
-        if(scanf("%d", &choix) != 1) { viderBuffer(); continue; }
-        viderBuffer();
-
-        if(choix == 1) { 
-            afficherRegles();
-        }
-        else if(choix == 2 || choix == 3) { 
-            int plateau[NB_LIGNES][NB_COLONNES];
-            int contrat[5] = {0};
-            int actuel[5] = {0}; 
-            int temps_max, coups, temps_restant;
-            int niveau = 1, vies = 3;
-            int partieValide = 0;
-
-            effacerEcran();
-            show_cursor();
-            if (choix == 2) {
-                printf("Entrez votre pseudo : ");
-                scanf("%49s", pseudo);
-                viderBuffer();
-                
-                if (verifier_pseudo(pseudo) == 0) {
-                    printf("Ce pseudo existe deja !\n"); pauseAffichage();
-                } else {
-                    partieValide = 1;
-                    sauvegarder_partie(pseudo, niveau, vies);
-                }
-            } else {
-                printf("Entrez votre pseudo a charger : ");
-                scanf("%49s", pseudo);
-                viderBuffer();
-                
-                if (charger_partie(pseudo, &niveau, &vies)) {
-                    printf("Partie chargee !\n"); pauseAffichage();
-                    partieValide = 1;
-                } else {
-                    printf("Sauvegarde introuvable.\n"); pauseAffichage();
-                }
-            }
-            hide_cursor();
-
-            if (partieValide) {
-                // BOUCLE DES NIVEAUX (Jusqu'au niveau 4)
-                while(vies > 0 && niveau <= 4 && partieValide) {
-                    cls();
-                    initNiveau(niveau, contrat, &temps_max, &coups);
-                    genererPlateau(plateau);
-                    for(int i=0; i<5; i++) actuel[i] = 0;
-
-                    int cx = 4, cy = 4;
-                    int selX = -1, selY = -1;
-                    int jeuEnCours = 1;
-                    int niveauGagne = 0;
-                    
-                    clock_t debut = clock();
-
-                    // BOUCLE DU GAMEPLAY (Temps Réel)
-                    while(jeuEnCours) {
-                        int temps_ecoule = (int)((clock() - debut) / CLOCKS_PER_SEC);
-                        temps_restant = temps_max - temps_ecoule;
-
-                        afficherEcranJeu(niveau, vies, temps_restant, coups, contrat, actuel, plateau, cx, cy, selX, selY);
-
-                        if(kbhit()) {
-                            char touche = getch();
-                            
-                            // Navigation ZQSD
-                            if(touche == 'z' && cy > 0) cy--;
-                            if(touche == 's' && cy < NB_LIGNES-1) cy++;
-                            if(touche == 'q' && cx > 0) cx--;
-                            if(touche == 'd' && cx < NB_COLONNES-1) cx++;
-                            
-                            // Navigation Fleches
-                            if (touche == -32) {
-                                touche = getch();
-                                if(touche == 72 && cy > 0) cy--;
-                                if(touche == 80 && cy < NB_LIGNES-1) cy++;
-                                if(touche == 75 && cx > 0) cx--;
-                                if(touche == 77 && cx < NB_COLONNES-1) cx++;
-                            }
-                            
-                            // Action Espace
-                            if(touche == ' ') { 
-                                if(selX == -1) {
-                                    selX = cx; selY = cy; 
-                                } else {
-                                    if (abs(cx-selX) + abs(cy-selY) == 1) {
-                                        
-                                        // PERMUTATION LIBRE SANS RETOUR
-                                        permuterItems(plateau, selX, selY, cx, cy);
-                                        
-                                        // On décompte le coup dans TOUS LES CAS
-                                        coups--;
-
-                                        if (presenceFigure(plateau)) {
-                                            supprimerFigure(plateau, contrat, actuel);
-                                            remplirPlateau(plateau);
-                                            while(presenceFigure(plateau)) {
-                                                afficherEcranJeu(niveau, vies, temps_restant, coups, contrat, actuel, plateau, cx, cy, -1, -1);
-                                                Sleep(200);
-                                                supprimerFigure(plateau, contrat, actuel);
-                                                remplirPlateau(plateau);
-                                            }
-                                        } 
-                                        // PAS DE 'ELSE' -> Le mouvement reste validé
-                                    }
-                                    selX = -1; selY = -1;
-                                }
-                            }
-                            // Quitter en cours (Echap)
-                            if(touche == 27) { jeuEnCours = 0; niveauGagne = 0; partieValide = 0; }
-                        }
-                        
-                        int fin = finDeNiveau(contrat, temps_restant, coups);
-                        if(fin == 1) { jeuEnCours = 0; niveauGagne = 0; } 
-                        if(fin == 0) { jeuEnCours = 0; niveauGagne = 1; }
-                        Sleep(50);
-                    }
-                    // --- FIN DE LA BOUCLE GAMEPLAY ---
-
-                    if (niveauGagne) {
-                        // --- CAS DE VICTOIRE ---
-                        if (niveau == 4) {
-                            // VICTOIRE TOTALE
-                            int choixFin = afficherEcranVictoire();
-                            if (choixFin == 2) choix = 4; // Quitter le programme
-                            
-                            partieValide = 0; // Retour menu
-                            remove(FILENAME); // Jeu fini = sauvegarde effacée
-                        } 
-                        else {
-                            // NIVEAU SUIVANT
-                            int choixFin = afficherMenuFinNiveau();
-                            if (choixFin == 1) {
-                                niveau++;
-                            } else {
-                                niveau++; 
-                                sauvegarder_partie(pseudo, niveau, vies);
-                                partieValide = 0; 
-                            }
-                        }
-                    } 
-                    else if (partieValide) { 
-                        // --- CAS DE DEFAITE ---
-                        vies--;
-                        
-                        if (vies == 0) {
-                            // GAME OVER FINAL
-                            int choixFin = afficherEcranDefaite();
-                            if (choixFin == 2) choix = 4; 
-                            
-                            partieValide = 0; 
-                            remove(FILENAME); // Game Over = sauvegarde effacée
-                        } else {
-                            // PERTE D'UNE VIE
-                            effacerEcran();
-                            text_color(LIGHTRED);
-                            printf("\n\n   PERDU... Le temps ou les coups sont epuises.\n");
-                            printf("   Il vous reste %d vies.\n", vies);
-                            text_color(WHITE);
-                            pauseAffichage();
-                            sauvegarder_partie(pseudo, niveau, vies);
-                        }
-                    }
-                }
-            }
+int charger_partie(const char* pseudo,int *niveau,int *vies){
+    FILE *fichier=fopen(FILENAME,"r"); char pseudo_lu[50]; int niveau_lu,vies_lu;
+    if(!fichier) return 0;
+    while(fscanf(fichier,"%s %d %d",pseudo_lu,&niveau_lu,&vies_lu)==3){
+        if(strcmp(pseudo_lu,pseudo)==0){
+            *niveau=niveau_lu; *vies=vies_lu;
+            fclose(fichier); return 1;
         }
     }
+    fclose(fichier); return 0;
+}
+
+// =======================
+// MAIN
+// =======================
+
+int main(){
+    srand(time(NULL));
+    hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+    hide_cursor(); // IMPORTANT : Empêche le curseur de clignoter partout
+
+    int plateau[8][8]; genererPlateau(plateau); int actuel[5]={0};
+
+    int cx=0, cy=0, selX=-1, selY=-1; bool selectionActive=false;
+
+    int niveau=1, vies=3, temps=30, coups=20, contrat[5];
+
+    char touche;
+    DWORD dernierTemps=GetTickCount();
+
+    // MENU PRINCIPAL
+    while(1){
+
+        afficherMenuPrincipal();
+        touche=getch();
+        if(touche=='1'){effacerEcranTotal(); afficherRegles(); }
+        else if(touche=='2'){ break; }
+        else if(touche=='3'){
+            effacerEcranTotal();
+            effacerEcran();
+            char pseudo[50]; printf("Entrez votre pseudo : "); scanf("%s",pseudo);
+            if(charger_partie(pseudo,&niveau,&vies)) printf("Partie chargee !\n");
+            else printf("Pseudo non trouve !\n"); pauseAffichage();
+            break;
+        }
+        else if(touche=='4') return 0;
+    }
+
+    // BOUCLE DES NIVEAUX
+    int etatNiveau(int contrat[5], int actuel[5], int temps, int coups){
+    if(temps<=0 || coups<=0) return -1; // perdu
+    for(int i=0;i<5;i++) if(actuel[i]<contrat[i]) return 0; // en cours
+    return 1; // gagné
+}
+
+    while(niveau<=3){
+        initNiveau(niveau, contrat, &temps, &coups, actuel, plateau);
+
+        int etat;
+        while ((etat = finDeNiveau(contrat, actuel, temps, coups)) == 0) {
+            if (etat == -1) {
+                effacerEcran();
+                setColor(12);
+                printf("PERDU ! Vous n'avez pas rempli le contrat.\n");
+                setColor(7);
+                pauseAffichage();
+                return 0; // FIN DU JEU
+            }
+
+            // gestion du temps
+            DWORD maintenant=GetTickCount();
+            if(maintenant-dernierTemps>=1000){ temps--; dernierTemps=maintenant; }
+
+            afficherEcranJeu(niveau, vies, temps, coups, contrat, actuel, plateau, cx, cy, selX, selY, selectionActive);
+            touche = lireTouche();
+
+            deplacerCurseur(&cx,&cy,touche);
+
+            if(touche==' '){
+                if(!selectionActive){ selectionActive=true; selX=cx; selY=cy; }
+                else{
+                    if(sontAdjacents(selX,selY,cx,cy)){
+                        permuterItems(plateau, selX, selY, cx, cy);
+                        supprimerFigure(plateau, actuel);
+                        remplirPlateau(plateau);
+                        coups--;
+                    }
+                    selectionActive=false;
+                }
+            }
+
+            if(touche==27) return 0;
+            if(touche=='p' || touche=='P'){
+                char pseudo[50]; effacerEcran(); printf("Entrez votre pseudo : "); scanf("%s",pseudo);
+                sauvegarder_partie(pseudo, niveau, vies);
+            }
+        }
+        if (etat == -1) { // PERDU
+            vies--;
+
+            effacerEcran();
+            setColor(12);
+            printf("PERDU !\n");
+            printf("Il vous reste %d vie(s).\n", vies);
+            setColor(7);
+            pauseAffichage();
+
+            if (vies <= 0) {
+                effacerEcran();
+                setColor(12);
+                printf("GAME OVER\n");
+                setColor(7);
+                pauseAffichage();
+                return 0; // fin du jeu
+            }
+
+    // RECOMMENCER LE MÊME NIVEAU
+            genererPlateau(plateau);
+            supprimerFigure(plateau, actuel);
+
+            for (int i = 0; i < 5; i++)
+                actuel[i] = 0;
+
+            initNiveau(niveau, contrat, &temps, &coups,actuel, plateau);
+
+            continue; // IMPORTANT : ne PAS passer au niveau suivant
+        }
+        if (etat == 1) { // GAGNÉ
+            effacerEcran();
+            setColor(1);
+            printf("NIVEAU %d TERMINE !\n", niveau);
+            setColor(7);
+            pauseAffichage();
+
+
+            niveau++;
+
+            genererPlateau(plateau);
+            supprimerFigure(plateau,actuel);
+
+            for (int i = 0; i < 5; i++)
+                actuel[i] = 0;
+
+            initNiveau(niveau, contrat, &temps, &coups,actuel, plateau);
+        }
+
+    }
+    setColor(3);
+    printf("\n");
+    printf("############################################################################\n");
+    printf("#                                                                          #\n");
+    printf("#        ##     ## ###### ##### ######  ####  ###### ######  ######        #\n");
+    printf("#        ##     ##   ##   ##      ##   ##  ##   ##   ##  ##  ##            #\n");
+    printf("#         ##   ##    ##   ##      ##   ##  ##   ##   ######  ####          #\n");
+    printf("#          ## ##     ##   ##      ##   ##  ##   ##   ## ##   ##            #\n");
+    printf("#           ###    ###### #####   ##    ####  ###### ##  ##  ######        #\n");
+    printf("#                                                                          #\n");
+    printf("############################################################################\n\n");
+    printf("\nBravo ! Vous avez fini tous les niveaux !\n");
+    pauseAffichage();
     return 0;
 }
