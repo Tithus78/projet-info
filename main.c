@@ -54,7 +54,9 @@ void hide_cursor() {
     inf.bVisible = 0;
     SetConsoleCursorInfo(cH, &inf);
 }
-
+void effacerEcranTotal() {
+    system("cls");
+}
 // Remplacez votre effacerEcran par ceci
 void effacerEcran() {
     gotoxy(0, 0); // On ne vide pas, on se repositionne juste au début
@@ -115,13 +117,13 @@ void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5]
     setColor(7);
     printf("     |                           |             %02d:%02d              |\n", minutes, secondes);
 
-    printf("-------------------|                           |--------------------------------|\n");
+    printf("-------------------|                           |                                |\n");
     printf("----CONTRAT--------|");
     setColor(9); printf("         JELLY BELLY       "); setColor(7);
     printf("|---------COUPS RESTANTS---------|\n");
-    printf(" Remplir le contrat|                           |               %02d               |\n", coups);
-    printf(" en %02d coups max   |                           |--------------------------------|\n", coupscontrat);
-    printf(" et en %d min max   |                           |--------------------------------|\n", tempscontrat);
+    printf(" Remplir le contrat|                           |                                |\n");
+    printf(" en %02d coups max   |                           |               %02d               |\n", coupscontrat, coups);
+    printf(" et en %d min max   |                           |                                |\n", tempscontrat);
     printf("-------------------|---------------------------|------------COMMANDES-----------|\n");
     printf("                   |                           |                                |\n");
 
@@ -409,11 +411,13 @@ int main(){
 
     // MENU PRINCIPAL
     while(1){
+
         afficherMenuPrincipal();
         touche=getch();
-        if(touche=='1'){ afficherRegles(); }
+        if(touche=='1'){effacerEcranTotal(); afficherRegles(); }
         else if(touche=='2'){ break; }
         else if(touche=='3'){
+            effacerEcranTotal();
             effacerEcran();
             char pseudo[50]; printf("Entrez votre pseudo : "); scanf("%s",pseudo);
             if(charger_partie(pseudo,&niveau,&vies)) printf("Partie chargee !\n");
