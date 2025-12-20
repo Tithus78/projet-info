@@ -13,13 +13,7 @@ HANDLE hConsole;
 // =======================
 void setColor(int color) { SetConsoleTextAttribute(hConsole, color); }
 
-void effacerEcran() {
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
-}
+
 
 void pauseAffichage() {
     printf("\nAppuyez sur une touche pour continuer...");
@@ -39,7 +33,32 @@ char obtenirSymbole(int valeur) {
         default: setColor(7); return ' ';
     }
 }
+// Ajoutez ces variables globales pour la gestion des couleurs si vous utilisez text_color
+int __FOREGROUND = 7;
+int __BACKGROUND = 0;
 
+// =======================
+// GESTION CONSOLE (ANTI-CLIGNOTEMENT)
+// =======================
+
+void gotoxy(int x, int y) {
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD c = { (SHORT)x, (SHORT)y };
+    SetConsoleCursorPosition(h, c);
+}
+
+void hide_cursor() {
+    HANDLE cH = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO inf;
+    GetConsoleCursorInfo(cH, &inf);
+    inf.bVisible = 0;
+    SetConsoleCursorInfo(cH, &inf);
+}
+
+// Remplacez votre effacerEcran par ceci
+void effacerEcran() {
+    gotoxy(0, 0); // On ne vide pas, on se repositionne juste au début
+}
 void afficherMenuPrincipal() {
     effacerEcran();
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -78,55 +97,66 @@ void afficherRegles() {
 }
 int coupscontrat = 0;
 int tempscontrat = 0;
-void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5], int actuel[5], int plateau[8][8], int cx, int cy){
+// On ajoute selX, selY et selectionActive pour l'encadré rouge
+void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5], int actuel[5], int plateau[8][8], int cx, int cy, int selX, int selY, bool selectionActive) {
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    effacerEcran();
-    int minutes = temps/60;
-    int secondes = temps%60;
+
+    // ANTI-CLIGNOTEMENT : On remonte au début au lieu de tout effacer
+    gotoxy(0, 0);
+
+    int minutes = temps / 60;
+    int secondes = temps % 60;
 
     printf("-----NIVEAU %02d-----|---------------------------|---------TEMPS RESTANT----------|\n", niveau);
 
     setColor(12);
     printf("  ");
-    for(int i=0;i<3;i++) printf(i<vies?" <3 " : "    ");
+    for (int i = 0; i < 3; i++) printf(i < vies ? " <3 " : "    ");
     setColor(7);
     printf("     |                           |             %02d:%02d              |\n", minutes, secondes);
 
     printf("-------------------|                           |--------------------------------|\n");
-
     printf("----CONTRAT--------|");
-    setColor(9);
-    printf("        JELLY BELLY        ");
-    setColor(7);
+    setColor(9); printf("         JELLY BELLY       "); setColor(7);
     printf("|---------COUPS RESTANTS---------|\n");
-    printf(" Remplir le contrat|                           |              %02d                |\n", coups);
+    printf(" Remplir le contrat|                           |               %02d               |\n", coups);
     printf(" en %02d coups max   |                           |--------------------------------|\n", coupscontrat);
     printf(" et en %d min max   |                           |--------------------------------|\n", tempscontrat);
     printf("-------------------|---------------------------|------------COMMANDES-----------|\n");
     printf("                   |                           |                                |\n");
 
-
-    for(int i=0;i<8;i++){
-        if(i<5){
-            char s = obtenirSymbole(i+1);
-            printf(" %c",s);
+    for (int i = 0; i < 8; i++) {
+        // Objectifs
+        if (i < 5) {
+            char s = obtenirSymbole(i + 1);
+            printf(" %c", s);
             setColor(7);
             printf(" : %02d/%02d         |", actuel[i], contrat[i]);
-        } else if(i==5) printf("                   |");
-        else printf("                   |");
+        } else {
+            printf("                   |");
+        }
 
         printf("  ");
-        for(int j=0;j<8;j++){
-            if(i==cy && j==cx){
-                setColor(7); printf("["); printf("%c", obtenirSymbole(plateau[i][j])); printf("]");
-            } else printf(" %c ", obtenirSymbole(plateau[i][j]));
-        } setColor(7);
+        // Plateau
+        for (int j = 0; j < 8; j++) {
+            // Logique d'encadrement
+            if (selectionActive && i == selY && j == selX) {
+                setColor(12); // ROUGE pour la sélection
+                printf("[%c]", obtenirSymbole(plateau[i][j]));
+            } else if (i == cy && j == cx) {
+                setColor(7); // BLANC pour le curseur normal
+                printf("[%c]", obtenirSymbole(plateau[i][j]));
+            } else {
+                printf(" %c ", obtenirSymbole(plateau[i][j]));
+            }
+        }
+        setColor(7);
         printf(" |");
 
-        switch(i){
+        // Commandes
+        switch (i) {
             case 0: printf(" ----Bouger----   --Selection-- |"); break;
             case 1: printf("    Z/Q/S/D          Espace     |"); break;
-            case 2: printf("                                |"); break;
             case 4: printf(" -Sauvegarde-     ---Quitter--- |"); break;
             case 5: printf("       P              Echap     |"); break;
             default: printf("                                |"); break;
@@ -366,6 +396,7 @@ int charger_partie(const char* pseudo,int *niveau,int *vies){
 int main(){
     srand(time(NULL));
     hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+    hide_cursor(); // IMPORTANT : Empêche le curseur de clignoter partout
 
     int plateau[8][8]; genererPlateau(plateau); int actuel[5]={0};
 
@@ -417,8 +448,7 @@ int main(){
             DWORD maintenant=GetTickCount();
             if(maintenant-dernierTemps>=1000){ temps--; dernierTemps=maintenant; }
 
-            afficherEcranJeu(niveau,vies,temps,coups,contrat,actuel,plateau,cx,cy);
-
+            afficherEcranJeu(niveau, vies, temps, coups, contrat, actuel, plateau, cx, cy, selX, selY, selectionActive);
             touche = lireTouche();
 
             deplacerCurseur(&cx,&cy,touche);
