@@ -43,7 +43,7 @@ char obtenirSymbole(int valeur) {
 void afficherMenuPrincipal() {
     effacerEcran();
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    setColor(12);
+    setColor(87);
     printf("########################################################\n");
     printf("#                                                      #\n");
     printf("#          ######  #####  ##     ##    ##    ##        #\n");
@@ -406,7 +406,9 @@ int main(){
         while ((etat = finDeNiveau(contrat, actuel, temps, coups)) == 0) {
             if (etat == -1) {
                 effacerEcran();
+                setColor(12);
                 printf("PERDU ! Vous n'avez pas rempli le contrat.\n");
+                setColor(7);
                 pauseAffichage();
                 return 0; // FIN DU JEU
             }
@@ -444,13 +446,17 @@ int main(){
             vies--;
 
             effacerEcran();
+            setColor(12);
             printf("PERDU !\n");
             printf("Il vous reste %d vie(s).\n", vies);
+            setColor(7);
             pauseAffichage();
 
             if (vies <= 0) {
                 effacerEcran();
+                setColor(12);
                 printf("GAME OVER\n");
+                setColor(7);
                 pauseAffichage();
                 return 0; // fin du jeu
             }
@@ -464,12 +470,15 @@ int main(){
 
             initNiveau(niveau, contrat, &temps, &coups,actuel, plateau);
 
-            continue
+            continue; // IMPORTANT : ne PAS passer au niveau suivant
         }
         if (etat == 1) { // GAGNÉ
             effacerEcran();
+            setColor(1);
             printf("NIVEAU %d TERMINE !\n", niveau);
+            setColor(7);
             pauseAffichage();
+
 
             niveau++;
 
@@ -481,8 +490,19 @@ int main(){
 
             initNiveau(niveau, contrat, &temps, &coups,actuel, plateau);
         }
-    }
 
+    }
+    setColor(3);
+    printf("\n");
+    printf("############################################################################\n");
+    printf("#                                                                          #\n");
+    printf("#        ##     ## ###### ##### ######  ####  ###### ######  ######        #\n");
+    printf("#        ##     ##   ##   ##      ##   ##  ##   ##   ##  ##  ##            #\n");
+    printf("#         ##   ##    ##   ##      ##   ##  ##   ##   ######  ####          #\n");
+    printf("#          ## ##     ##   ##      ##   ##  ##   ##   ## ##   ##            #\n");
+    printf("#           ###    ###### #####   ##    ####  ###### ##  ##  ######        #\n");
+    printf("#                                                                          #\n");
+    printf("############################################################################\n\n");
     printf("\nBravo ! Vous avez fini tous les niveaux !\n");
     pauseAffichage();
     return 0;
