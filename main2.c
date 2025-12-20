@@ -1,9 +1,8 @@
 /* =============================================================
-   PROJET MATCH-3 - ECE 2025 - VERSION FINALE
-   - 4 Niveaux
-   - Gestion des Vies
-   - Sauvegarde / Chargement
-   - Ecrans de Victoire et Defaite
+   PROJET MATCH-3 - ECE 2025 - VERSION CUSTOM FINALISÉE
+   - Permutations libres (Même sans match)
+   - Style d'affichage "0" colorés
+   - Panneau de contrôles ajouté et corrigé (alignement)
    ============================================================= */
 
 #define _CRT_SECURE_NO_WARNINGS
@@ -42,56 +41,6 @@
 // --- VARIABLES GLOBALES POUR L'AFFICHAGE ---
 static int __BACKGROUND = BLACK;
 static int __FOREGROUND = WHITE;
-
-// =============================================================
-//                    PROTOTYPES
-// =============================================================
-
-// Outils Console
-void clrscr();
-void gotoxy(int x, int y);
-void text_color(int color);
-void bg_color(int color);
-void hide_cursor();
-void show_cursor();
-void effacerEcran();
-void pauseAffichage();
-void viderBuffer();
-
-// Logique Jeu
-void initNiveau(int difficulte, int contrat[5], int *temps_restant, int *coups_restant);
-void genererPlateau(int tab[NB_LIGNES][NB_COLONNES]);
-void remplirPlateau(int tab[NB_LIGNES][NB_COLONNES]);
-void supprimerFigure(int tab[NB_LIGNES][NB_COLONNES], int contrat[5], int actuel[5]);
-int finDeNiveau(int contrat[5], int temps_restant, int coups_restant);
-void permuterItems(int plateau[NB_LIGNES][NB_COLONNES], int x1, int y1, int x2, int y2);
-bool presenceFigure(int tab[NB_LIGNES][NB_COLONNES]);
-
-// Detections
-int figure3itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]);
-int figure3itemVertical(int tab[NB_LIGNES][NB_COLONNES]);
-int figure4itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]);    
-int figure4itemVertical(int tab[NB_LIGNES][NB_COLONNES]);
-int figure6itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]);
-int figure6itemVertical(int tab[NB_LIGNES][NB_COLONNES]);
-int figure9croix(int tab[NB_LIGNES][NB_COLONNES]);
-int figurecarre(int tab[NB_LIGNES][NB_COLONNES]);
-
-// Affichage
-char obtenirSymbole(int valeur);
-int obtenirCouleur(int valeur);
-void afficherMenuPrincipal();
-int afficherMenuFinNiveau();
-int afficherEcranVictoire(); // NOUVEAU
-int afficherEcranDefaite();  // NOUVEAU
-void afficherRegles();
-void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5], int actuel[5], int plateau[NB_LIGNES][NB_COLONNES], int cx, int cy, int selX, int selY);
-
-// Sauvegarde
-int verifier_pseudo(const char* pseudo);
-int charger_partie(const char* pseudo, int* niveau_ptr, int* vies_ptr);
-int sauvegarder_partie(const char* pseudo, int niveau, int vies);
-
 
 // =============================================================
 //                    OUTILS CONSOLE
@@ -159,6 +108,10 @@ void pauseAffichage() {
     getch();
 }
 
+void cls(){
+    system("cls");
+}
+
 // =============================================================
 //                    LOGIQUE DU JEU
 // =============================================================
@@ -181,91 +134,31 @@ void initNiveau(int difficulte, int contrat[5], int *temps_restant, int *coups_r
         *temps_restant = 80;
         *coups_restant = 30;
     }
-    else { // NIVEAU 4 (ULTIME)
+    else { 
         contrat[0] = 15; contrat[1] = 15; contrat[2] = 15; contrat[3] = 15; contrat[4] = 15;
-        *temps_restant = 60; // Tres peu de temps
+        *temps_restant = 60; 
         *coups_restant = 35;
     }
 }
 
-bool presenceFigure(int tab[NB_LIGNES][NB_COLONNES]){
-    if(figure4itemVertical(tab)) return true;          
-    else if(figure4itemHorizontale(tab)) return true; 
-    else if(figure3itemVertical(tab)) return true;
-    else if(figure3itemHorizontale(tab)) return true;
-    else return false;
-}
-
-void genererPlateau(int tab[NB_LIGNES][NB_COLONNES]) {
-    do {
-        for (int i = 0; i < NB_LIGNES; i++) {
-            for (int j = 0; j < NB_COLONNES; j++) {
-                tab[i][j] = rand() % 5 + 1; 
-            }
-        }
-    } while (presenceFigure(tab)); 
-}
-
-void permuterItems(int plateau[NB_LIGNES][NB_COLONNES], int x1, int y1, int x2, int y2) {
-    int temp = plateau[y1][x1];
-    plateau[y1][x1] = plateau[y2][x2];
-    plateau[y2][x2] = temp;
-}
-
-// --- Fonctions de détection ---
+// Detections
 int figure3itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES;i++){ 
-        for(int j = 0; j< NB_COLONNES-2;j++){ 
-            int c1 = tab[i][j];
-            if(c1 != 0 && c1 == tab[i][j+1] && c1 == tab[i][j+2]) return c1;
-        }
-    }
-    return 0;
+    for(int i = 0; i<NB_LIGNES;i++){ for(int j = 0; j< NB_COLONNES-2;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i][j+1] && c1 == tab[i][j+2]) return c1; }} return 0;
 }
 int figure3itemVertical(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES-2;i++){ 
-        for(int j = 0; j< NB_COLONNES;j++){
-            int c1 = tab[i][j];
-            if(c1 != 0 && c1 == tab[i+1][j] && c1 == tab[i+2][j]) return c1;
-        }
-    }
-    return 0;
+    for(int i = 0; i<NB_LIGNES-2;i++){ for(int j = 0; j< NB_COLONNES;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i+1][j] && c1 == tab[i+2][j]) return c1; }} return 0;
 }
 int figure4itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES;i++){ 
-        for(int j = 0; j< NB_COLONNES-3;j++){ 
-            int c1 = tab[i][j];
-            if(c1 != 0 && c1 == tab[i][j+1] && c1 == tab[i][j+2] && c1 == tab[i][j+3]) return c1;
-        }
-    }
-    return 0;
+    for(int i = 0; i<NB_LIGNES;i++){ for(int j = 0; j< NB_COLONNES-3;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i][j+1] && c1 == tab[i][j+2] && c1 == tab[i][j+3]) return c1; }} return 0;
 }
 int figure4itemVertical(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES-3;i++){ 
-        for(int j = 0; j< NB_COLONNES;j++){
-            int c1 = tab[i][j];
-            if(c1 != 0 && c1 == tab[i+1][j] && c1 == tab[i+2][j] && c1 == tab[i+3][j]) return c1;
-        }
-    }
-    return 0;
+    for(int i = 0; i<NB_LIGNES-3;i++){ for(int j = 0; j< NB_COLONNES;j++){ int c1 = tab[i][j]; if(c1 != 0 && c1 == tab[i+1][j] && c1 == tab[i+2][j] && c1 == tab[i+3][j]) return c1; }} return 0;
 }
 int figure6itemHorizontale(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES;i++){ 
-        for(int j = 0; j< NB_COLONNES-5;j++){ 
-            int c1=tab[i][j];
-            if(c1!=0 && c1==tab[i][j+1] && c1==tab[i][j+2] && c1==tab[i][j+3] && c1==tab[i][j+4] && c1==tab[i][j+5]) return c1;
-        }
-    }
-    return 0;
+    for(int i = 0; i<NB_LIGNES;i++){ for(int j = 0; j< NB_COLONNES-5;j++){ int c1=tab[i][j]; if(c1!=0 && c1==tab[i][j+1] && c1==tab[i][j+2] && c1==tab[i][j+3] && c1==tab[i][j+4] && c1==tab[i][j+5]) return c1; }} return 0;
 }
 int figure6itemVertical(int tab[NB_LIGNES][NB_COLONNES]){
-    for(int i = 0; i<NB_LIGNES-5;i++){ 
-        for(int j = 0; j< NB_COLONNES;j++){
-            int c1=tab[i][j];
-            if(c1!=0 && c1==tab[i+1][j] && c1==tab[i+2][j] && c1==tab[i+3][j] && c1==tab[i+4][j] && c1==tab[i+5][j]) return c1;
-        }
-    }
-    return 0;
+    for(int i = 0; i<NB_LIGNES-5;i++){ for(int j = 0; j< NB_COLONNES;j++){ int c1=tab[i][j]; if(c1!=0 && c1==tab[i+1][j] && c1==tab[i+2][j] && c1==tab[i+3][j] && c1==tab[i+4][j] && c1==tab[i+5][j]) return c1; }} return 0;
 }
 int figure9croix(int tab[NB_LIGNES][NB_COLONNES]){
     int c3;
@@ -292,6 +185,30 @@ int figurecarre(int tab[NB_LIGNES][NB_COLONNES]){
         }
     }
     return 0;
+}
+
+bool presenceFigure(int tab[NB_LIGNES][NB_COLONNES]){
+    if(figure4itemVertical(tab)) return true;          
+    else if(figure4itemHorizontale(tab)) return true; 
+    else if(figure3itemVertical(tab)) return true;
+    else if(figure3itemHorizontale(tab)) return true;
+    else return false;
+}
+
+void genererPlateau(int tab[NB_LIGNES][NB_COLONNES]) {
+    do {
+        for (int i = 0; i < NB_LIGNES; i++) {
+            for (int j = 0; j < NB_COLONNES; j++) {
+                tab[i][j] = rand() % 5 + 1; 
+            }
+        }
+    } while (presenceFigure(tab)); 
+}
+
+void permuterItems(int plateau[NB_LIGNES][NB_COLONNES], int x1, int y1, int x2, int y2) {
+    int temp = plateau[y1][x1];
+    plateau[y1][x1] = plateau[y2][x2];
+    plateau[y2][x2] = temp;
 }
 
 void majContrat(int valeur, int contrat[5], int actuel[5]) {
@@ -409,27 +326,23 @@ int finDeNiveau(int contrat[5], int temps_restant, int coups_restant){
 }
 
 // =============================================================
-//                    AFFICHAGE
+//                    AFFICHAGE MODIFIE (STYLE 0 + CONTROLES)
 // =============================================================
 
+// Retourne toujours '0' si c'est un item (1-5)
 char obtenirSymbole(int valeur) {
-    switch(valeur) {
-        case 1: return '$'; 
-        case 2: return '*'; 
-        case 3: return '#'; 
-        case 4: return '0'; 
-        case 5: return '@'; 
-        default: return ' ';
-    }
+    if (valeur >= 1 && valeur <= 5) return '0';
+    return ' ';
 }
 
+// Couleurs vives pour les différents 0
 int obtenirCouleur(int valeur) {
     switch(valeur) {
-        case 1: return LIGHTRED;
-        case 2: return WHITE;
-        case 3: return LIGHTMAGENTA;
-        case 4: return LIGHTCYAN;
-        case 5: return YELLOW;
+        case 1: return LIGHTRED;      // 0 Rouge
+        case 2: return LIGHTBLUE;     // 0 Bleu
+        case 3: return LIGHTGREEN;    // 0 Vert
+        case 4: return YELLOW;        // 0 Jaune
+        case 5: return LIGHTMAGENTA;  // 0 Magenta
         default: return WHITE;
     }
 }
@@ -534,13 +447,15 @@ void afficherRegles() {
     pauseAffichage();
 }
 
+// MODIFICATION : Nouvelle fonction d'affichage avec Panneau de Contrôle corrigé
 void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5], int actuel[5], int plateau[NB_LIGNES][NB_COLONNES], int cx, int cy, int selX, int selY) {
     gotoxy(0,0);
     text_color(WHITE);
-    printf("NIV: %d | VIES: %d | TEMPS: %03d | COUPS: %02d    \n", niveau, vies, temps, coups);
-    printf("----------------------------------------\n");
+    printf("NIV: %d | VIES: %d | TEMPS: %03d | COUPS: %02d     \n", niveau, vies, temps, coups);
+    printf("----------------------------------------------------------\n");
     
-    printf("OBJECTIFS : ");
+    // Contrats
+    printf("CONTRAT : ");
     for(int i=0; i<5; i++) {
         if(contrat[i] > 0) {
             text_color(obtenirCouleur(i+1));
@@ -551,12 +466,15 @@ void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5]
         }
     }
     text_color(WHITE);
-    printf("\n----------------------------------------\n");
+    printf("\n----------------------------------------------------------\n");
+    // CORRECTION ICI : Suppression du "9x9" et réalignement
+    printf("|         PLATEAU            |         CONTROLES        |\n");
+    printf("----------------------------------------------------------\n");
 
     for (int i = 0; i < NB_LIGNES; i++) {
-        printf(" ");
+        printf("|");
+        // PLATEAU (Gauche)
         for (int j = 0; j < NB_COLONNES; j++) {
-            
             if (i == cy && j == cx) {
                 bg_color(BLUE);
                 text_color(obtenirCouleur(plateau[i][j]));
@@ -575,9 +493,21 @@ void afficherEcranJeu(int niveau, int vies, int temps, int coups, int contrat[5]
             }
         }
         text_color(WHITE);
-        printf(" |\n");
+        printf(" | ");
+        
+        // CONTROLES (Droite)
+        switch(i) {
+            case 1: printf(" Z/Q/S/D : Deplacer      "); break;
+            // CORRECTION ICI : "Fleches" sans accent pour l'alignement
+            case 2: printf(" Fleches : Deplacer      "); break;
+            case 4: printf(" ESPACE  : Selectionner  "); break;
+            case 5: printf("           Permuter      "); break;
+            case 7: printf(" ECHAP   : Quitter       "); break;
+            default:printf("                         "); break;
+        }
+        printf("|\n");
     }
-    printf("----------------------------------------\n");
+    printf("----------------------------------------------------------\n");
 }
 
 // =============================================================
@@ -708,6 +638,7 @@ int main() {
             if (partieValide) {
                 // BOUCLE DES NIVEAUX (Jusqu'au niveau 4)
                 while(vies > 0 && niveau <= 4 && partieValide) {
+                    cls();
                     initNiveau(niveau, contrat, &temps_max, &coups);
                     genererPlateau(plateau);
                     for(int i=0; i<5; i++) actuel[i] = 0;
@@ -750,10 +681,14 @@ int main() {
                                     selX = cx; selY = cy; 
                                 } else {
                                     if (abs(cx-selX) + abs(cy-selY) == 1) {
+                                        
+                                        // PERMUTATION LIBRE SANS RETOUR
                                         permuterItems(plateau, selX, selY, cx, cy);
                                         
+                                        // On décompte le coup dans TOUS LES CAS
+                                        coups--;
+
                                         if (presenceFigure(plateau)) {
-                                            coups--;
                                             supprimerFigure(plateau, contrat, actuel);
                                             remplirPlateau(plateau);
                                             while(presenceFigure(plateau)) {
@@ -762,11 +697,8 @@ int main() {
                                                 supprimerFigure(plateau, contrat, actuel);
                                                 remplirPlateau(plateau);
                                             }
-                                        } else {
-                                            afficherEcranJeu(niveau, vies, temps_restant, coups, contrat, actuel, plateau, cx, cy, -1, -1);
-                                            Sleep(200);
-                                            permuterItems(plateau, selX, selY, cx, cy);
-                                        }
+                                        } 
+                                        // PAS DE 'ELSE' -> Le mouvement reste validé
                                     }
                                     selX = -1; selY = -1;
                                 }
