@@ -24,7 +24,7 @@ void pauseAffichage() {
     getch();
 }
 
-// Transforme l'entier du plateau en symbole visuel
+
 char obtenirSymbole(int valeur) {
     switch (valeur) {
         case 1: setColor(13); return 'O'; // Violet
@@ -84,10 +84,10 @@ void afficherEcranJeu(
 ) { hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     effacerEcran();
 
-    // --- LIGNE SUPÉRIEURE (NIVEAU | TEMPS) ---
+    // --- LIGNE DU DESSUS (NIVEAU | TEMPS) ---
     printf("-----NIVEAU %02d-----|---------------------------|---------TEMPS RESTANT----------|\n", niveau);
 
-    // Affichage des coeurs (Vies)
+    // Affichage des <3
     setColor(12);
     printf("  ");
     for(int i=0; i<3; i++) printf(i < vies ? "  <3 " : "    ");
@@ -97,16 +97,16 @@ void afficherEcranJeu(
 
     printf("-------------------|                           |--------------------------------|\n");
 
-    // --- CORPS CENTRAL ---
+    // --- CENTRE ---
     printf("----CONTRAT--------|        JELLY BELLY        |---------COUPS RESTANTS---------|\n");
     printf(" Remplir le contrat|                           |              %02d                |\n", coups);
     printf(" en 30 coups max   |                           |--------------------------------|\n");
     printf("-------------------|---------------------------|------------COMMANDES-----------|\n");
 
-    // --- BOUCLE DE DESSIN (OBJECTIFS | PLATEAU | COMMANDES) ---
+    // --- LES BOUCLES DES DESSINS (GENRE : OBJECTIFS, PLATEAU, COMMANDES) ---
     for (int i = 0; i < 8; i++) {
 
-        // 1. Colonne GAUCHE (Objectifs)
+        // Colonne de gauche
         if (i < 5) {
             char s = obtenirSymbole(i + 1);
             printf(" %c", s);
@@ -118,7 +118,7 @@ void afficherEcranJeu(
             printf("                   |");
         }
 
-        // 2. Colonne MILIEU (Le Plateau)
+        // Colonne du milieu
         printf("  ");
         for (int j = 0; j < 8; j++) {
             if (i == cy && j == cx){
@@ -133,7 +133,7 @@ void afficherEcranJeu(
         }setColor(7);
         printf(" |");
 
-        // 3. Colonne DROITE (Commandes dynamiques selon la ligne)
+        //Colonne de droite
         switch(i) {
             case 0: printf(" ----Bouger----   --Selection-- |"); break;
             case 1: printf("    Z/Q/S/D          Espace     |"); break;
